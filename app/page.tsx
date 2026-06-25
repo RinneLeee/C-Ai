@@ -290,6 +290,7 @@ export default function Home() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [isAutoScrollPaused, setIsAutoScrollPaused] = useState(false);
+  const [isInputExpanded, setIsInputExpanded] = useState(false);
 
   // Subscribe to toasts
   useEffect(() => {
@@ -360,8 +361,13 @@ export default function Home() {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      const newHeight = Math.min(textareaRef.current.scrollHeight, 300);
+      const scrollH = textareaRef.current.scrollHeight;
+      const maxH = typeof window !== 'undefined' ? window.innerHeight * 0.5 : 300;
+      const newHeight = Math.min(scrollH, maxH);
       textareaRef.current.style.height = `${newHeight}px`;
+      
+      // Expand layout if height exceeds roughly 1 line + padding (60px is a safe threshold)
+      setIsInputExpanded(scrollH > 60); 
     }
   }, [input]);
 
@@ -1798,9 +1804,11 @@ export default function Home() {
                   </div>
                 )}
 
-                <div className="flex flex-row items-end gap-3 p-1 relative">
-                  {/* Progressive Disclosure Settings Toggle */}
-                  <div className="relative flex-shrink-0" ref={modelDropdownRef}>
+                {/* WRAPPING FLEX LAYOUT */}
+                <div className="flex flex-row flex-wrap items-end gap-x-2 gap-y-2 p-1 relative w-full">
+                  
+                  {/* Settings Toggle */}
+                  <div className={`relative flex-shrink-0 transition-all ${isInputExpanded ? 'order-2' : 'order-1'}`} ref={modelDropdownRef}>
                     <button type="button" onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)} className={`h-12 w-12 flex items-center justify-center transition-all duration-300 ease-spring rounded-[1.25rem] opacity-50 hover:opacity-100 ${isModelDropdownOpen ? 'opacity-100 bg-white/10' : ''} ${theme === 'dark' ? 'text-[#F4F4F5]' : 'text-[#18181B]'}`} title="Model & Swarm Settings">
                         <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
@@ -1870,7 +1878,7 @@ export default function Home() {
                   </div>
 
                   {/* Attachment Button */}
-                  <div className="flex-shrink-0">
+                  <div className={`flex-shrink-0 transition-all ${isInputExpanded ? 'order-3' : 'order-2'}`}>
                     <button type="button" onClick={() => fileInputRef.current?.click()} className={`h-12 w-12 flex items-center justify-center transition-all duration-300 ease-spring rounded-[1.25rem] opacity-50 hover:opacity-100 ${theme === 'dark' ? 'text-[#F4F4F5]' : 'text-[#18181B]'}`} title="Attach file">
                       <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" /></svg>
                     </button>
@@ -1884,19 +1892,36 @@ export default function Home() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(e as any); } }}
                     placeholder={isAgentMode ? (activeProposedPlan ? "Approve the plan ('ok', 'proceed') or type modifications..." : "Provide details for the Manager to build a plan...") : "Message..."}
-                    className={`w-full bg-transparent px-3 py-3 focus:outline-none resize-none overflow-y-auto font-light text-[15px] ${theme === 'dark' ? 'text-[#F4F4F5] placeholder-[#71717A]' : 'text-[#18181B] placeholder-[#A1A1AA]'}`}
+                    className={`bg-transparent px-3 py-3 focus:outline-none resize-none overflow-y-auto font-light text-[15px] transition-all duration-300 ${theme === 'dark' ? 'text-[#F4F4F5] placeholder-[#71717A]' : 'text-[#18181B] placeholder-[#A1A1AA]'} ${isInputExpanded ? 'order-1 basis-full w-full mb-1' : 'order-3 flex-1 min-w-0'}`}
                     disabled={isLoading}
                     rows={1}
                     style={{ minHeight: '48px', maxHeight: '300px', lineHeight: '24px' }}
                   />
 
-                  <div className="flex flex-row items-center gap-2 flex-shrink-0">
+                  <div className={`flex flex-row items-center gap-2 flex-shrink-0 transition-all ${isInputExpanded ? 'order-4 ml-auto' : 'order-4'}`}>
                     <button type="submit" disabled={isLoading || (!input.trim() && attachments.length === 0)} className={`h-12 w-12 flex items-center justify-center rounded-[1.25rem] focus:outline-none transition-all duration-300 ease-spring ${!isLoading && (input.trim() || attachments.length > 0) ? 'active:scale-90 scale-100' : 'scale-95 opacity-50'} ${(input.trim() || attachments.length > 0) && !isLoading ? (isAgentMode ? "bg-indigo-600 text-white hover:bg-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.3)]" : (theme === 'dark' ? "bg-white text-[#0A0A0A] hover:bg-[#E5E5E5] shadow-[0_0_20px_rgba(255,255,255,0.1)]" : "bg-black text-white hover:bg-[#1A1A1A] shadow-[0_0_20px_rgba(0,0,0,0.1)]")) : (theme === 'dark' ? "bg-white/5 text-[#A1A1AA] cursor-not-allowed" : "bg-black/5 text-[#71717A] cursor-not-allowed")}`}>
                       <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 00-1.06 0l-3 3a.75.75 0 101.06 1.06l1.72-1.72v5.69a.75.75 0 001.5 0v-5.69l1.72 1.72a.75.75 0 101.06-1.06l-3-3z" clipRule="evenodd" /></svg>
                     </button>
                   </div>
                 </div>
               </form>
+
+              {/* NEW MODE INDICATOR BELOW INPUT */}
+              <div className="absolute -bottom-6 left-0 right-0 flex justify-center pointer-events-none">
+                 <div className={`flex items-center gap-2 text-[9px] font-mono font-medium tracking-widest uppercase opacity-60 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+                    {isAgentMode ? (
+                       <span className="flex items-center gap-1.5 text-indigo-500">
+                          <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-2.5 h-2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
+                          SWARM ({swarmTier})
+                       </span>
+                    ) : (
+                       <span>STANDARD</span>
+                    )}
+                    <span className="opacity-50 mx-1">•</span>
+                    <span>{activeModel.replace('deepseek-v4-', 'DS-').replace('qwen3.7-', 'QW-').replace(/-/g, ' ')}</span>
+                 </div>
+              </div>
+              
             </div>
           </div>
 
