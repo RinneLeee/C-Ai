@@ -358,6 +358,7 @@ export default function Home() {
     return null;
   }, [messages]);
 
+  // SMART INPUT EXPANSION (Hysteresis to prevent flickering)
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -365,11 +366,17 @@ export default function Home() {
       const maxH = typeof window !== 'undefined' ? window.innerHeight * 0.5 : 300;
       const newHeight = Math.min(scrollH, maxH);
       textareaRef.current.style.height = `${newHeight}px`;
-      
-      // Expand layout if height exceeds roughly 1 line + padding (60px is a safe threshold)
-      setIsInputExpanded(scrollH > 60); 
+
+      // Hysteresis Logic:
+      // Once the box expands, keep it expanded until input is fully cleared. 
+      // This stops the layout from jittering back to small when full-width makes the text fit on 1 line.
+      if (input === "") {
+        setIsInputExpanded(false);
+      } else if (scrollH > 52 && !isInputExpanded) {
+        setIsInputExpanded(true);
+      }
     }
-  }, [input]);
+  }, [input, isInputExpanded]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -675,6 +682,7 @@ export default function Home() {
         setAttachments([]); 
         setIsModelDropdownOpen(false); 
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
+        setIsInputExpanded(false); // Explicitly reset expansion
     }
 
     try {
@@ -1454,22 +1462,9 @@ export default function Home() {
               <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
             </button>
 
-            {/* UPGRADED HEADER: MODEL AND MODE INDICATOR */}
+            {/* UPGRADED HEADER: MODEL AND MODE INDICATOR REMOVED */}
             <div className={`flex items-center space-x-3 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-              <h1 className="text-xs font-bold tracking-widest uppercase">C-Ai</h1>
-              <div className={`h-3.5 w-[1px] ${theme === 'dark' ? 'bg-white/20' : 'bg-black/20'}`}></div>
-              <div className={`flex items-center gap-2 text-[10px] font-mono font-medium tracking-widest uppercase opacity-70`}>
-                 {isAgentMode ? (
-                    <span className="flex items-center gap-1.5 text-indigo-500">
-                       <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
-                       SWARM ({swarmTier})
-                    </span>
-                 ) : (
-                    <span>STANDARD</span>
-                 )}
-                 <span className="opacity-50 mx-1.5">•</span>
-                 <span>{activeModel.replace('deepseek-v4-', 'DS-').replace('qwen3.7-', 'QW-').replace(/-/g, ' ')}</span>
-              </div>
+              <h1 className="text-lg font-bold tracking-widest uppercase">C-Ai</h1>
             </div>
             
             <div className="ml-auto flex items-center space-x-4">
@@ -1810,7 +1805,7 @@ export default function Home() {
                   {/* Settings Toggle */}
                   <div className={`relative flex-shrink-0 transition-all ${isInputExpanded ? 'order-2' : 'order-1'}`} ref={modelDropdownRef}>
                     <button type="button" onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)} className={`h-12 w-12 flex items-center justify-center transition-all duration-300 ease-spring rounded-[1.25rem] opacity-50 hover:opacity-100 ${isModelDropdownOpen ? 'opacity-100 bg-white/10' : ''} ${theme === 'dark' ? 'text-[#F4F4F5]' : 'text-[#18181B]'}`} title="Model & Swarm Settings">
-                        <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.807-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
                     {isModelDropdownOpen && (
                         <div className={`absolute bottom-[120%] left-0 mb-2 w-80 rounded-[2rem] shadow-2xl z-50 overflow-hidden border ${theme === 'dark' ? 'glass-dark-solid' : 'glass-light-solid'}`}>
